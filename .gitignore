@@ -59,3 +59,5 @@ terraform.tfstate*
 node_modules/
 package-lock.json
 yarn.lock
+.claude/
+.claude/

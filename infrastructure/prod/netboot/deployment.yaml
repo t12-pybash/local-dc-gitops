@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbootxyz
+  namespace: netboot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netbootxyz
+  template:
+    metadata:
+      labels:
+        app: netbootxyz
+    spec:
+      # hostNetwork gives the pod direct access to the node's network stack.
+      # This is required for two reasons:
+      #   1. DHCP proxy (port 67/UDP) must respond on the same broadcast domain as the booting node
+      #   2. TFTP (port 69/UDP) traffic must come from the node's real IP, not a pod IP behind NAT
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      # Pin to wk4 — it's on the physical 10.0.0.0/24 network and is the most capable worker
+      nodeSelector:
+        kubernetes.io/hostname: wk4
+
+      containers:
+        - name: netbootxyz
+          image: ghcr.io/netbootxyz/netbootxyz:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "Europe/Dublin"
+          ports:
+            - containerPort: 3000   # Web UI for managing boot menus and assets
+              protocol: TCP
+            - containerPort: 69     # TFTP — serves the bootloader to PXE clients
+              protocol: UDP
+            - containerPort: 8080   # HTTP — serves OS assets (kernels, initrds)
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: assets
+              mountPath: /assets
+
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: assets
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbootxyz-ui
+  namespace: netboot
+spec:
+  type: ClusterIP
+  selector:
+    app: netbootxyz
+  ports:
+    - name: web-ui
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

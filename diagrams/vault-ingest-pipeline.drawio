@@ -1,0 +1,162 @@
+<mxfile host="app.diagrams.net" modified="2026-06-17" version="21.0.0">
+  <diagram name="vault-ingest-pipeline" id="vault-ingest-pipeline">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Vault Ingest Pipeline — Git-Based (CronJob → Redpanda → Consumer)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="1300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ── GITHUB (EXTERNAL) ── -->
+        <mxCell id="github-bg" value="&lt;b&gt;GitHub · External&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;verticalAlign=top;arcSize=5;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="20" y="90" width="270" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="github-repo" value="&lt;b&gt;obsidian-vault&lt;/b&gt;&lt;br&gt;git@github.com:t12-pybash/&lt;br&gt;obsidian-vault.git&lt;br&gt;&lt;br&gt;branch: main&lt;br&gt;&lt;font color='#666666'&gt;~101 .md files&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="45" y="140" width="220" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- ── KUBERNETES CLUSTER BOUNDARY ── -->
+        <mxCell id="k8s-bg" value="&lt;b&gt;Kubernetes Cluster&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;verticalAlign=top;arcSize=5;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="330" y="80" width="1540" height="720" as="geometry" />
+        </mxCell>
+
+        <!-- ── VAULT-INGEST NAMESPACE (PUBLISHER / LEFT) ── -->
+        <mxCell id="vi-publisher-bg" value="&lt;b&gt;vault-ingest&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;arcSize=5;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="120" width="470" height="640" as="geometry" />
+        </mxCell>
+
+        <!-- CronJob (Primary Publisher) -->
+        <mxCell id="cronjob" value="&lt;b&gt;vault-ingest CronJob&lt;/b&gt;&lt;br&gt;schedule: */10 * * * *&lt;br&gt;&lt;br&gt;image: ghcr.io/t12-pybash/sre-cli&lt;br&gt;cmd: vault_git_publisher.py&lt;br&gt;&lt;br&gt;1. git clone / pull from GitHub&lt;br&gt;2. diff last_sha..HEAD&lt;br&gt;3. publish changed .md → vault-changes&lt;br&gt;4. write HEAD sha to PVC cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="370" y="165" width="410" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- vault-data PVC -->
+        <mxCell id="vault-data-pvc" value="PVC · vault-data&lt;br&gt;git clone /vault" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="370" y="440" width="145" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- vault-ingest-cache PVC -->
+        <mxCell id="cache-pvc" value="PVC · vault-ingest-cache&lt;br&gt;last HEAD sha" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="535" y="440" width="155" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- SSH Secret -->
+        <mxCell id="ssh-secret" value="Secret · vault-ingest-ssh&lt;br&gt;id_ed25519 → /ssh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="370" y="545" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ── MESSAGING NAMESPACE ── -->
+        <mxCell id="messaging-bg" value="&lt;b&gt;messaging&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;arcSize=5;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="120" width="300" height="340" as="geometry" />
+        </mxCell>
+
+        <!-- Redpanda broker -->
+        <mxCell id="redpanda" value="&lt;b&gt;Redpanda&lt;/b&gt; · redpanda-0&lt;br&gt;StatefulSet · 1 replica&lt;br&gt;&lt;br&gt;Kafka-compatible broker&lt;br&gt;port: 9092&lt;br&gt;&lt;br&gt;topic: vault-changes&lt;br&gt;partitions: 3&lt;br&gt;&lt;font color='#666666'&gt;image: redpandadata/redpanda&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="860" y="165" width="240" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Redpanda PVC -->
+        <mxCell id="redpanda-pvc" value="PVC · 5Gi&lt;br&gt;truenas-iscsi" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="910" y="375" width="120" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- ── VAULT-INGEST NAMESPACE (CONSUMER / RIGHT) ── -->
+        <mxCell id="vi-consumer-bg" value="&lt;b&gt;vault-ingest&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;arcSize=5;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="120" width="400" height="340" as="geometry" />
+        </mxCell>
+
+        <!-- Consumer Deployment -->
+        <mxCell id="consumer" value="&lt;b&gt;vault-ingest-consumer&lt;/b&gt;&lt;br&gt;Deployment · 1 replica&lt;br&gt;&lt;br&gt;image: ghcr.io/t12-pybash/sre-cli&lt;br&gt;cmd: consume_vault.py&lt;br&gt;&lt;br&gt;1. poll vault-changes topic&lt;br&gt;2. on modified: embed + upsert&lt;br&gt;3. on deleted: remove from Qdrant&lt;br&gt;4. commit offset" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="165" width="360" height="250" as="geometry" />
+        </mxCell>
+
+        <!-- ── AI-PLATFORM NAMESPACE ── -->
+        <mxCell id="ai-bg" value="&lt;b&gt;ai-platform&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;arcSize=5;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="120" width="270" height="490" as="geometry" />
+        </mxCell>
+
+        <!-- Qdrant -->
+        <mxCell id="qdrant" value="&lt;b&gt;Qdrant&lt;/b&gt;&lt;br&gt;qdrant.ai-platform.svc:6333&lt;br&gt;&lt;br&gt;collection: vault&lt;br&gt;vectors: nomic-embed-text&lt;br&gt;&lt;br&gt;NetworkPolicy:&lt;br&gt;allow-from-vault-ingest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="165" width="230" height="175" as="geometry" />
+        </mxCell>
+
+        <!-- Ollama (on desktop, external) -->
+        <mxCell id="ollama" value="&lt;b&gt;Ollama&lt;/b&gt;&lt;br&gt;10.0.0.113:11434&lt;br&gt;&lt;br&gt;model: nomic-embed-text&lt;br&gt;&lt;font color='#666666'&gt;(on desktop)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="375" width="230" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- ── ARROWS ── -->
+
+        <!-- GitHub → CronJob (git pull via SSH) -->
+        <mxCell id="e1" value="git pull (SSH)" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;strokeColor=#d6b656;strokeWidth=2;" edge="1" source="github-repo" target="cronjob" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CronJob → vault-data PVC -->
+        <mxCell id="e2" value="clone /vault" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;strokeColor=#82b366;" edge="1" source="cronjob" target="vault-data-pvc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CronJob → cache PVC -->
+        <mxCell id="e3" value="read/write&lt;br&gt;HEAD sha" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.65;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;strokeColor=#82b366;" edge="1" source="cronjob" target="cache-pvc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SSH Secret → CronJob -->
+        <mxCell id="e4" value="mount /ssh" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.2;entryY=1;entryDx=0;entryDy=0;fontSize=10;strokeColor=#b85450;" edge="1" source="ssh-secret" target="cronjob" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CronJob → Redpanda (produce) -->
+        <mxCell id="e5" value="produce&lt;br&gt;{ path, action, content }" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;strokeColor=#9673a6;strokeWidth=2;" edge="1" source="cronjob" target="redpanda" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Redpanda → Consumer (consume) -->
+        <mxCell id="e6" value="consume&lt;br&gt;poll offset" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;strokeColor=#82b366;strokeWidth=2;" edge="1" source="redpanda" target="consumer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Redpanda → Redpanda PVC (persist) -->
+        <mxCell id="e7" value="persist logs" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;strokeColor=#9673a6;" edge="1" source="redpanda" target="redpanda-pvc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Consumer → Ollama (embed) -->
+        <mxCell id="e8" value="embed request" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;strokeColor=#d6b656;strokeWidth=2;" edge="1" source="consumer" target="ollama" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Consumer → Qdrant (upsert) -->
+        <mxCell id="e9" value="upsert / delete vectors" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" source="consumer" target="qdrant" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ── FLOW LEGEND ── -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="20" y="840" width="1850" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Event Flow&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="850" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-1" value="1.  CronJob runs every 10 min (*/10 * * * *)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="875" width="400" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-2" value="2.  git clone / pull obsidian-vault from GitHub via SSH key (Secret).  diff last_sha..HEAD to find changed .md files." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="898" width="700" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-3" value="3.  Changed files published as JSON { path, action, content } to vault-changes Redpanda topic.  HEAD sha written to vault-ingest-cache PVC — run skipped if sha unchanged." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="921" width="880" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-4" value="4.  vault-ingest-consumer (always-running Deployment) polls topic, calls Ollama for embeddings, upserts/deletes in Qdrant.  Offset committed — no re-processing on restart." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="950" y="875" width="900" height="25" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

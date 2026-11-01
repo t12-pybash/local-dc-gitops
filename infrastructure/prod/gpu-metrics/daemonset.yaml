@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-gpu-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-gpu-exporter
+  template:
+    metadata:
+      labels:
+        app: nvidia-gpu-exporter
+    spec:
+      nodeSelector:
+        gpu: "true"
+      runtimeClassName: nvidia
+      containers:
+        - name: nvidia-gpu-exporter
+          image: utkuozdemir/nvidia_gpu_exporter:1.2.0@sha256:cc407f77ab017101ce233a0185875ebc75d2a0911381741b20ad91f695e488c7
+          ports:
+            - containerPort: 9835
+              name: metrics
+          env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: utility
+      volumes: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nvidia-gpu-exporter
+  namespace: monitoring
+  labels:
+    app: nvidia-gpu-exporter
+spec:
+  selector:
+    app: nvidia-gpu-exporter
+  ports:
+    - name: metrics
+      port: 9835
+      targetPort: 9835

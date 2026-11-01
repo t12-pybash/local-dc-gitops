@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashy-config
+  namespace: ai-platform
+data:
+  conf.yml: |
+    pageInfo:
+      title: Homelab
+      description: t12 homelab services
+    appConfig:
+      theme: colorful
+      layout: auto
+      iconSize: medium
+    sections:
+      - name: Monitoring
+        items:
+          - title: Grafana
+            url: https://grafana.home.t12.io
+            icon: si-grafana
+      - name: AI Platform
+        items:
+          - title: Open WebUI
+            url: https://open-webui.home.t12.io
+            icon: si-openai
+          - title: LiteLLM
+            url: https://litellm.home.t12.io
+            icon: si-openai
+          - title: Qdrant
+            url: https://qdrant.home.t12.io/dashboard
+            icon: si-databricks
+      - name: Infrastructure
+        items:
+          - title: Technitium DNS
+            url: http://<cluster-lb-vip>:5380
+            icon: si-amazondocumentdb
+          - title: Pi-hole
+            url: https://pihole.home.t12.io/admin
+            icon: si-pihole
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashy
+  namespace: ai-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashy
+  template:
+    metadata:
+      labels:
+        app: dashy
+    spec:
+      containers:
+        - name: dashy
+          image: lissy93/dashy@sha256:14bf438cd31512978acc409bb55f3bf6fa86b90e6435e3f8e51c1301c786e3fb
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/user-data/conf.yml
+              subPath: conf.yml
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: dashy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashy
+  namespace: ai-platform
+spec:
+  selector:
+    app: dashy
+  ports:
+    - port: 8080
+      targetPort: 8080

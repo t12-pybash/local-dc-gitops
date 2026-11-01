@@ -1,0 +1,16 @@
+---
+# Run this against a freshly installed Ubuntu 24.04 node before joining it to the cluster.
+# Usage: ansible-playbook playbooks/01-bootstrap-node.yml -l wk1
+#
+# What this does:
+#   1. common    — disables swap, loads kernel modules, sets sysctl, installs prerequisites
+#   2. containerd — installs containerd v2.x from Docker repo with systemd cgroup driver
+#   3. kubeadm   — installs kubelet/kubeadm/kubectl v1.31, holds package versions
+- name: Bootstrap Kubernetes node prerequisites
+  hosts: "{{ target | default('workers') }}"
+  become: true
+
+  roles:
+    - common
+    - containerd
+    - kubeadm

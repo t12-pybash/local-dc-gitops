@@ -1,0 +1,114 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: t12-platform
+  description: T-12 private cloud platform — bare-metal Kubernetes, AI inference, GitOps
+  tags:
+    - kubernetes
+    - gitops
+    - ai-platform
+    - sovereign-cloud
+spec:
+  owner: group:platform-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ai-platform
+  description: LLM inference stack — Ollama, LiteLLM, Open WebUI, Qdrant vector search
+  annotations:
+    github.com/project-slug: t12-pybash/homelab-gitops
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - kubernetes
+    - llm
+    - rag
+    - vector-search
+spec:
+  type: service
+  lifecycle: production
+  owner: group:platform-team
+  system: t12-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: argus
+  description: Autonomous SRE agent — Prometheus, Alertmanager, runbook search, incident management, remediation via MCP
+  annotations:
+    github.com/project-slug: t12-pybash/argus
+  tags:
+    - python
+    - cli
+    - mcp
+    - observability
+spec:
+  type: tool
+  lifecycle: production
+  owner: group:platform-team
+  system: t12-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: vault-ingest
+  description: Obsidian vault ingestion pipeline — chunking, embedding, Qdrant upsert
+  annotations:
+    github.com/project-slug: t12-pybash/homelab-gitops
+  tags:
+    - rag
+    - embeddings
+    - ollama
+spec:
+  type: service
+  lifecycle: production
+  owner: group:platform-team
+  system: t12-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: java-3tier-demo
+  description: 3-tier Java/PostgreSQL demo stack deployed to Clever Cloud via Terraform — EC IDP use case
+  annotations:
+    github.com/project-slug: t12-pybash/clever-cloud-3tier
+  tags:
+    - java
+    - postgresql
+    - clever-cloud
+    - terraform
+    - sovereign-cloud
+    - cycloid-pattern
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:platform-team
+  system: t12-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: homelab-k8s
+  description: 5-node bare-metal Kubernetes cluster — kubeadm HA, Cilium CNI, Flux CD
+  tags:
+    - kubernetes
+    - bare-metal
+    - cilium
+spec:
+  type: kubernetes-cluster
+  owner: group:platform-team
+  system: t12-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: clever-cloud-postgresql
+  description: Managed PostgreSQL on Clever Cloud eu-fr-1 — sovereign cloud data tier
+  tags:
+    - postgresql
+    - clever-cloud
+    - sovereign-cloud
+spec:
+  type: database
+  owner: group:platform-team
+  system: t12-platform

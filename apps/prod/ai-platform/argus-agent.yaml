@@ -1,0 +1,162 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argus
+  namespace: ai-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "events", "nodes", "services", "endpoints"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources: ["helmreleases"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["inferenceservices"]
+    verbs: ["get", "list", "watch", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argus
+subjects:
+  - kind: ServiceAccount
+    name: argus
+    namespace: ai-platform
+roleRef:
+  kind: ClusterRole
+  name: argus
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argus-config
+  namespace: ai-platform
+data:
+  config.toml: |
+    prometheus_url = "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
+    alertmanager_url = "http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093"
+    loki_url = "http://loki.monitoring.svc.cluster.local:3100"
+    ollama_url = "http://litellm.ai-platform.svc.cluster.local:4000"
+    ollama_model = "llama3.1:8b"
+    diagnose_model = "llama3.1:8b"
+    qdrant_url = "http://qdrant.ai-platform.svc.cluster.local:6333"
+    embed_model = "nomic-embed-text"
+    vault_path = "/vault"
+    embed_ollama_url = "http://ollama.ai-platform.svc.cluster.local:11434"
+    agent_webhook_type = "slack"
+    agent_webhook_port = "7654"
+    agent_interactivity_url = "https://argus.home.t12.io"
+    agent_approval_timeout = "900"
+    gitlab_project_id = "77954334"
+    gitlab_base_url = "https://gitlab.com"
+    gitops_apps_path = "apps/prod"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argus
+  namespace: ai-platform
+  labels:
+    app: argus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argus
+  template:
+    metadata:
+      labels:
+        app: argus
+    spec:
+      serviceAccountName: argus
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: argus
+          image: ghcr.io/t12-pybash/argus@sha256:f18bc2c5cbedd3b55690f0ca77671b409c5f2a897d796b9c94adb505afc92a87
+          command: ["argus", "agent", "start", "--interval", "30", "--namespaces", "ai-platform"]
+          ports:
+            - containerPort: 7654
+              name: webhook
+          env:
+            - name: ARGUS_CONFIG_FILE
+              value: /etc/argus/config.toml
+            - name: ARGUS_AGENT_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: argus-secrets
+                  key: slack-webhook-url
+            - name: ARGUS_SLACK_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: argus-secrets
+                  key: slack-bot-token
+            - name: ARGUS_SLACK_APP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: argus-secrets
+                  key: slack-app-token
+            - name: ARGUS_GITLAB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: argus-secrets
+                  key: gitlab-token
+                  optional: true
+          volumeMounts:
+            - name: config
+              mountPath: /etc/argus
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 7654
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: argus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argus
+  namespace: ai-platform
+  labels:
+    app: argus
+spec:
+  selector:
+    app: argus
+  ports:
+    - name: webhook
+      port: 7654
+      targetPort: 7654

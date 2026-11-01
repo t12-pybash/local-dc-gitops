@@ -1,0 +1,15 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gateway-api-crds
+  namespace: flux-system
+spec:
+  interval: 24h
+  sourceRef:
+    kind: GitRepository
+    name: gateway-api
+    namespace: flux-system
+  path: ./config/crd/experimental
+  prune: false  # never auto-delete CRDs
+  wait: true
+  timeout: 2m

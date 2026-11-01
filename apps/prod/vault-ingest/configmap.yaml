@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argus-config
+  namespace: vault-ingest
+data:
+  config.toml: |
+    ollama_model = "mistral"
+    embed_ollama_url = "http://ollama.ai-platform.svc.cluster.local:11434"
+    qdrant_url = "http://qdrant.ai-platform.svc.cluster.local:6333"
+    vault_path = "/vault"
+    redpanda_url = "redpanda.messaging.svc.cluster.local:9092"

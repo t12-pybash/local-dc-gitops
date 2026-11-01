@@ -1,0 +1,12 @@
+dependencies:
+- name: litellm
+  repository: file://charts/litellm
+  version: 0.1.0
+- name: qdrant
+  repository: file://charts/qdrant
+  version: 0.1.0
+- name: open-webui
+  repository: file://charts/open-webui
+  version: 0.1.0
+digest: sha256:3956faa8c51ba3c4710b0a31214eddd684311a110334fcb498179dbaaef5177e
+generated: "2026-06-27T22:30:17.136857622+01:00"

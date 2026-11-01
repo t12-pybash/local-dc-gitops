@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.ollama.storage.size }}
+  {{- if .Values.ollama.storage.storageClass }}
+  storageClassName: {{ .Values.ollama.storage.storageClass }}
+  {{- end }}

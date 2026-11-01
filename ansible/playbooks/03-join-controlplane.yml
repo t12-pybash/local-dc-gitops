@@ -1,0 +1,51 @@
+---
+# Joins a bootstrapped node to the existing cluster as a control plane member.
+# Run AFTER 01-bootstrap-node.yml completes successfully.
+# Usage: ansible-playbook playbooks/03-join-controlplane.yml -e target=cp3 -l cp3
+#
+# How it works:
+#   1. Uploads certs to the cluster (generates a time-limited certificate key)
+#   2. Generates a fresh kubeadm join token
+#   3. Runs the join with --control-plane --certificate-key on the target node
+- name: Join control plane node to cluster
+  hosts: "{{ target | default('control_plane') }}"
+  become: true
+
+  tasks:
+    - name: Upload control plane certificates (runs on delegate_cp)
+      command: kubeadm init phase upload-certs --upload-certs
+      delegate_to: "{{ delegate_cp | default('cp1') }}"
+      register: upload_certs_output
+      run_once: true
+
+    - name: Extract certificate key
+      set_fact:
+        cert_key: "{{ upload_certs_output.stdout_lines[-1] }}"
+      run_once: true
+
+    - name: Generate kubeadm join token (runs on delegate_cp)
+      command: kubeadm token create --print-join-command
+      delegate_to: "{{ delegate_cp | default('cp1') }}"
+      register: join_command
+      run_once: true
+
+    - name: Check if node is already part of the cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join node as control plane
+      command: "{{ join_command.stdout }} --control-plane --certificate-key {{ cert_key }}"
+      when: not kubelet_conf.stat.exists
+
+    - name: Verify node joined (runs on delegate_cp)
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
+      delegate_to: "{{ delegate_cp | default('cp1') }}"
+      register: nodes_output
+      changed_when: false
+
+    - name: Show cluster nodes
+      debug:
+        msg: "{{ nodes_output.stdout_lines }}"
+      delegate_to: "{{ delegate_cp | default('cp1') }}"
+      run_once: true

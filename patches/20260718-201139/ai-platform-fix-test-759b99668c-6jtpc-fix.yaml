@@ -1,0 +1,21 @@
+# Pattern: ImagePullBackOff
+# Root cause: ghcr.io pull secret 'ghcr-pull-secret' is missing or expired.
+#
+# ACTION REQUIRED — recreate the secret before merging this MR:
+#   kubectl create secret docker-registry ghcr-pull-secret \
+#     -n ai-platform \
+#     --docker-server=ghcr.io \
+#     --docker-username=<username> \
+#     --docker-password=<PAT or token> \
+#     --dry-run=client -o yaml | kubectl apply -f -
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fix-test
+  namespace: ai-platform
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret

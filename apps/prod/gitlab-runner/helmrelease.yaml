@@ -1,0 +1,61 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: gitlab-runner
+      version: "0.73.x"
+      sourceRef:
+        kind: HelmRepository
+        name: gitlab
+        namespace: gitlab-runner
+      interval: 10m
+  install:
+    timeout: 10m
+    remediation:
+      retries: 3
+  upgrade:
+    timeout: 10m
+    remediation:
+      retries: 3
+  valuesFrom:
+    - kind: Secret
+      name: gitlab-runner-secret
+      valuesKey: runner-token
+      targetPath: runnerToken
+  values:
+    gitlabUrl: https://gitlab.com
+    rbac:
+      create: false
+    serviceAccount:
+      create: false
+      name: gitlab-runner
+    runners:
+      tags: "homelab-k8s"
+      runUntagged: false
+      locked: true
+      executor: kubernetes
+      kubernetes:
+        namespace: gitlab-runner
+        image: alpine:latest
+        privileged: false
+        pull_policy: if-not-present
+        helper_image: "registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:x86_64-latest"
+        volumes:
+          - name: kube-config
+            projected:
+              sources:
+                - serviceAccountToken:
+                    path: token
+                    expirationSeconds: 3600
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi

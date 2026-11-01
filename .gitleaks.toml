@@ -1,0 +1,6 @@
+[allowlist]
+description = "Ignore detect-secrets baseline and SOPS-encrypted files"
+paths = [
+  '''.secrets\.baseline''',
+  '''\.sops\.yaml$''',
+]

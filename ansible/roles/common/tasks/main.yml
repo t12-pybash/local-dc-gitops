@@ -1,0 +1,53 @@
+---
+# Kubernetes requires swap to be disabled — kubelet refuses to start with swap on
+- name: Disable swap immediately
+  command: swapoff -a
+  changed_when: false
+
+- name: Remove swap from /etc/fstab so it stays off after reboot
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\s+swap\s+.*)$'
+    replace: '# \1'
+
+# These two kernel modules are required for Kubernetes networking:
+# - overlay: needed by containerd for container filesystems (OverlayFS)
+# - br_netfilter: allows iptables to see bridged traffic (needed for kube-proxy / Cilium)
+- name: Load kernel modules for Kubernetes
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Persist kernel modules across reboots
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+
+# These sysctl settings let iptables/nftables see traffic on bridge interfaces
+# and enable IPv4 forwarding — both required for pod-to-pod networking
+- name: Set sysctl parameters for Kubernetes networking
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/k8s.conf
+    reload: true
+  loop:
+    - { key: net.bridge.bridge-nf-call-iptables,  value: "1" }
+    - { key: net.bridge.bridge-nf-call-ip6tables, value: "1" }
+    - { key: net.ipv4.ip_forward,                 value: "1" }
+
+- name: Install prerequisite packages
+  apt:
+    name:
+      - curl
+      - gnupg
+      - apt-transport-https
+      - ca-certificates
+      - conntrack
+    state: present
+    update_cache: true

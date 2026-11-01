@@ -1,0 +1,47 @@
+---
+# We install from Docker's apt repo, not Ubuntu's — Ubuntu ships an older containerd
+# Docker's repo gives us containerd.io v2.x which matches what's on wk4
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker apt repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Install containerd
+  apt:
+    name: containerd.io
+    state: present
+    update_cache: true
+
+# Generate the default config and write it to disk.
+# Without this, containerd uses built-in defaults which don't have SystemdCgroup = true
+- name: Create containerd config directory
+  file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+
+- name: Generate default containerd config
+  shell: containerd config default
+  register: containerd_default_config
+  changed_when: false
+
+- name: Write containerd config with SystemdCgroup enabled
+  copy:
+    content: "{{ containerd_default_config.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}"
+    dest: /etc/containerd/config.toml
+  notify: Restart containerd
+
+# kubelet and containerd must use the same cgroup driver.
+# kubeadm defaults to systemd — so containerd must also use systemd.
+# If they mismatch, pods will fail to start with cryptic cgroup errors.
+- name: Enable and start containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: started

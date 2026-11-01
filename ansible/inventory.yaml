@@ -1,0 +1,22 @@
+all:
+  vars:
+    ansible_user: py
+    ansible_ssh_private_key_file: ~/.ssh/id_ed25519  # path to your SSH key
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+  children:
+    control_plane:
+      hosts:
+        cp1:
+          ansible_host: 10.0.0.X
+        cp2:
+          ansible_host: 10.0.0.X
+        cp3:
+          ansible_host: 10.0.0.X
+
+    workers:
+      hosts:
+        wk1:
+          ansible_host: 10.0.0.X
+        wk4:
+          ansible_host: 10.0.0.113

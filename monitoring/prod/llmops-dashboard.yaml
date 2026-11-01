@@ -1,0 +1,749 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llmops-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  llmops.json: |
+    {
+      "uid": "sovereign-llmops",
+      "title": "LLMOps \u2014 Olympus AI Platform",
+      "tags": [
+        "llm",
+        "litellm",
+        "ai",
+        "olympus"
+      ],
+      "timezone": "browser",
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Requests / min",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 0,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_proxy_total_requests_metric_total[5m])) * 60",
+              "legendFormat": "req/min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "area",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Error Rate",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 4,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(litellm_proxy_failed_requests_metric_total[5m])) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total[5m])), 1)",
+              "legendFormat": "error %"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "P95 Latency",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 8,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p95"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "decimals": 2,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 15
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Tokens / min",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 12,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_total_tokens_metric_total[5m])) * 60",
+              "legendFormat": "tok/min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "purple",
+                    "value": null
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "graphMode": "area",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "In-flight Requests",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 16,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(litellm_in_flight_requests)",
+              "legendFormat": "active"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 10
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 6,
+          "type": "stat",
+          "title": "Cache Hit Rate",
+          "gridPos": {
+            "h": 4,
+            "w": 4,
+            "x": 20,
+            "y": 0
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(litellm_cache_hits_metric_total[5m]) or vector(0)) / clamp_min(sum(rate(litellm_cache_hits_metric_total[5m]) or vector(0)) + sum(rate(litellm_cache_misses_metric_total[5m]) or vector(0)), 1)",
+              "legendFormat": "hit %"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "green",
+                    "value": 50
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background",
+            "orientation": "auto"
+          }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Request Rate by Model",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 4
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_requests_metric_total[5m])) by (model) * 60",
+              "legendFormat": "{{model}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Error Rate Over Time",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "100 * sum(rate(litellm_proxy_failed_requests_metric_total[5m])) by (requested_model) / clamp_min(sum(rate(litellm_proxy_total_requests_metric_total[5m])) by (requested_model), 0.001)",
+              "legendFormat": "{{requested_model}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "End-to-End Latency Percentiles",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p99"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(litellm_request_total_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p50"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 5
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 10,
+          "type": "timeseries",
+          "title": "LLM API Latency P95 by Model",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(litellm_llm_api_latency_metric_bucket[5m])) by (le, model))",
+              "legendFormat": "{{model}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 11,
+          "type": "timeseries",
+          "title": "Token Throughput by Model",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_total_tokens_metric_total[5m])) by (model) * 60",
+              "legendFormat": "{{model}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "customFieldConfig": {
+              "axisLabel": "tokens/min"
+            }
+          }
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "Input vs Output Tokens",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 20
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_input_tokens_metric_total[5m])) * 60",
+              "legendFormat": "Input tokens/min"
+            },
+            {
+              "expr": "sum(rate(litellm_output_tokens_metric_total[5m])) * 60",
+              "legendFormat": "Output tokens/min"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "LLM API Success vs Failure by Model",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(litellm_deployment_success_responses_total[5m])) by (litellm_model_name) * 60",
+              "legendFormat": "\u2713 {{litellm_model_name}}"
+            },
+            {
+              "expr": "sum(rate(litellm_deployment_failure_responses_total[5m])) by (litellm_model_name) * 60",
+              "legendFormat": "\u2717 {{litellm_model_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 5
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        },
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "LiteLLM Overhead Latency P95",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "datasource": {
+            "type": "prometheus"
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(litellm_overhead_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p95 overhead"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(litellm_overhead_latency_metric_bucket[5m])) by (le))",
+              "legendFormat": "p50 overhead"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "min": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 5
+              }
+            }
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            }
+          }
+        }
+      ]
+    }

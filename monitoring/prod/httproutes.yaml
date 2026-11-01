@@ -1,0 +1,96 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "grafana.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-stack-grafana
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "prometheus.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-stack-prometheus
+          port: 9090
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "alertmanager.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-stack-alertmanager
+          port: 9093
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "loki.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: loki-stack
+          port: 3100
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ntfy
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "ntfy.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: ntfy
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pushgateway
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gw
+      namespace: kube-system
+  hostnames:
+    - "pushgateway.home.t12.io"
+  rules:
+    - backendRefs:
+        - name: pushgateway
+          port: 9091

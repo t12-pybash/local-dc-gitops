@@ -1,0 +1,53 @@
+{{- if .Values.argus.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: argus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argus
+  template:
+    metadata:
+      labels:
+        app: argus
+    spec:
+      serviceAccountName: argus
+      {{- if .Values.argus.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.argus.imagePullSecret }}
+      {{- end }}
+      containers:
+        - name: argus
+          image: {{ .Values.argus.image }}
+          {{- if .Values.argus.agent.enabled }}
+          command:
+            - argus
+            - agent
+            - start
+            - --interval
+            - {{ .Values.argus.agent.interval | quote }}
+            {{- if .Values.argus.agent.auto }}
+            - --auto
+            {{- end }}
+          {{- else }}
+          command: ["sleep", "infinity"]
+          {{- end }}
+          env:
+            - name: ARGUS_CONFIG_FILE
+              value: /etc/argus/config.toml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/argus
+              readOnly: true
+          resources:
+            {{- toYaml .Values.argus.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: argus-config
+{{- end }}

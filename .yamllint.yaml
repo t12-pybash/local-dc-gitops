@@ -1,0 +1,20 @@
+extends: default
+rules:
+  line-length:
+    max: 150
+    level: warning
+  indentation: disable
+  document-start: disable
+  empty-lines: disable
+  truthy: disable
+  comments:
+    min-spaces-from-content: 1
+    level: warning
+ignore: |
+  clusters/prod/flux-system/gotk-components.yaml
+  .pre-commit-config.yaml
+  .pre-commit-config-updated.yaml
+  .gitlab-ci.yml
+  helm/
+  ansible/
+  "**/*.sops.yaml"

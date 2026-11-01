@@ -1,0 +1,47 @@
+---
+# Joins a bootstrapped node to the existing cluster as a worker.
+# Run AFTER 01-bootstrap-node.yml completes successfully.
+# Usage: ansible-playbook playbooks/02-join-worker.yml -l wk1
+#
+# How it works:
+#   1. Connects to cp1 to generate a fresh kubeadm join token (tokens expire after 24h)
+#   2. Runs the join command on the target worker node
+#   3. Verifies the node appears in `kubectl get nodes`
+- name: Join worker node to cluster
+  hosts: "{{ target | default('workers') }}"
+  become: true
+
+  tasks:
+    # delegate_to means this task runs on cp1, not on the worker being joined.
+    # We store the output in join_command so the next task can use it.
+    - name: Generate kubeadm join token (runs on cp1)
+      command: kubeadm token create --print-join-command
+      delegate_to: cp1
+      register: join_command
+      run_once: true
+
+    - name: Check if node is already part of the cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join node to cluster
+      command: "{{ join_command.stdout }}"
+      when: not kubelet_conf.stat.exists
+
+    - name: Label node as worker
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf label node {{ inventory_hostname }} node-role.kubernetes.io/worker= --overwrite
+      delegate_to: cp1
+      changed_when: true
+
+    - name: Verify node joined (runs on cp1)
+      command: kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
+      delegate_to: cp1
+      register: nodes_output
+      changed_when: false
+
+    - name: Show cluster nodes
+      debug:
+        msg: "{{ nodes_output.stdout_lines }}"
+      delegate_to: cp1
+      run_once: true

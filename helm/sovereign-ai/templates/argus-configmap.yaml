@@ -1,0 +1,20 @@
+{{- if .Values.argus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argus-config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.toml: |
+    prometheus_url = {{ .Values.argus.config.prometheusUrl | quote }}
+    alertmanager_url = {{ .Values.argus.config.alertmanagerUrl | quote }}
+    loki_url = {{ .Values.argus.config.lokiUrl | quote }}
+    ollama_url = {{ default (include "sovereign-ai.litellmUrl" .) .Values.argus.config.ollamaUrl | quote }}
+    ollama_model = {{ .Values.argus.config.ollamaModel | quote }}
+    diagnose_model = {{ .Values.argus.config.diagnoseModel | quote }}
+    qdrant_url = {{ default (include "sovereign-ai.qdrantUrl" .) .Values.argus.config.qdrantUrl | quote }}
+    embed_model = {{ .Values.argus.config.embedModel | quote }}
+    vault_path = {{ .Values.argus.config.vaultPath | quote }}
+    agent_webhook_url = {{ .Values.argus.config.agentWebhookUrl | quote }}
+    agent_webhook_type = {{ .Values.argus.config.agentWebhookType | quote }}
+{{- end }}

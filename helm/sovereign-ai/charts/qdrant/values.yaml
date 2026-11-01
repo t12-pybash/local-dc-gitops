@@ -1,0 +1,49 @@
+replicaCount: 1
+
+image:
+  repository: qdrant/qdrant
+  tag: v1.16.3@sha256:0425e3e03e7fd9b3dc95c4214546afe19de2eb2e28ca621441a56663ac6e1f46
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 6333
+  targetPort: 6333
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClassName: "truenas-iscsi"
+
+qdrant:
+  api_key: ""
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+livenessProbe:
+  tcpSocket:
+    port: 6333
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  tcpSocket:
+    port: 6333
+  initialDelaySeconds: 45
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

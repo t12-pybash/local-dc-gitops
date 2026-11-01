@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+  - default-deny-ingress.yaml
+  - allow-intra-namespace.yaml
+  - allow-from-kube-system.yaml
+  - allow-from-ai-platform.yaml
+  - allow-from-gateway.yaml
+  - allow-from-cloudflared.yaml

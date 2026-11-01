@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: litellm
+  namespace: ai-platform
+  labels:
+    app: litellm
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: litellm
+  endpoints:
+    - port: http
+      path: /metrics/
+      interval: 30s

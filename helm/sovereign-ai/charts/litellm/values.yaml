@@ -1,0 +1,54 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm
+  tag: main-latest@sha256:4870893763aca143f590bd5685a25219037af027d1d27e97abcb17ac9ec5d09f
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 4000
+  targetPort: 4000
+  nodePort: 30800
+  # Internal service for pod-to-pod communication
+  internalPort: 4000
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  - name: LITELLM_MASTER_KEY
+    value: "sk-1234567890abcdefghijk"  # Override with real key in production
+  - name: LITELLM_LOG
+    value: "DEBUG"
+
+# LiteLLM configuration
+config:
+  # Model list - routes to Ollama on local machine
+  model_list:
+    - model_name: mistral
+      litellm_params:
+        model: ollama/mistral
+        api_base: http://ollama.ai-platform.svc.cluster.local:11434
+    - model_name: llama3.2:3b
+      litellm_params:
+        model: ollama/llama3.2:3b
+        api_base: http://ollama.ai-platform.svc.cluster.local:11434
+    - model_name: qwen2.5-coder:7b
+      litellm_params:
+        model: ollama/qwen2.5-coder:7b
+        api_base: http://ollama.ai-platform.svc.cluster.local:11434
+    - model_name: nomic-embed-text
+      litellm_params:
+        model: ollama/nomic-embed-text
+        api_base: http://ollama.ai-platform.svc.cluster.local:11434
+
+  # Router settings
+  router_settings:
+    enable_pre_call_checks: true
+    enable_cooldowns: true

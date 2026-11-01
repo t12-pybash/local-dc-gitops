@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-kube-prometheus-stack-prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/instance: prometheus-kube-prometheus-stack
+      release: kube-prometheus-stack
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+        app.kubernetes.io/instance: prometheus-kube-prometheus-stack
+        release: kube-prometheus-stack
+    spec:
+      containers:
+      - name: prometheus
+        image: quay.io/prometheus/prometheus:v3.11.3-distroless
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus/config
+        - name: config-out
+          mountPath: /etc/prometheus/config_out
+        - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-0
+          mountPath: /etc/prometheus/rules/prometheus-kube-prometheus-stack-prometheus-rulefiles-0
+        - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-1
+          mountPath: /etc/prometheus/rules/prometheus-kube-prometheus-stack-prometheus-rulefiles-1
+        - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-2
+          mountPath: /etc/prometheus/rules/prometheus-kube-prometheus-stack-prometheus-rulefiles-2
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SHARD
+          value: '0'
+      volumes:
+      - name: config
+        secret:
+          secretName: prometheus-kube-prometheus-stack-prometheus
+      - name: tls-assets
+        projected:
+          sources:
+          - secret:
+              name: prometheus-kube-prometheus-stack-prometheus-tls-assets-0
+      - name: config-out
+        emptyDir: {}
+      - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-0
+        configMap:
+          name: prometheus-kube-prometheus-stack-prometheus-rulefiles-0
+      - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-1
+        configMap:
+          name: prometheus-kube-prometheus-stack-prometheus-rulefiles-1
+      - name: prometheus-kube-prometheus-stack-prometheus-rulefiles-2
+        configMap:
+          name: prometheus-kube-prometheus-stack-prometheus-rulefiles-2
+      - name: web-config
+        secret:
+          secretName: prometheus-kube-prometheus-stack-prometheus-web-config
+      - name: kube-api-access-sw8ws
+        projected:
+          sources:
+          - serviceAccountToken: {}
+          - downwardAPI:
+              items:
+              - path: ca.crt
+                fieldRef:
+                  fieldPath: spec.clusterIP

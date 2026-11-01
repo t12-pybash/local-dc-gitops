@@ -1,0 +1,27 @@
+apiVersion: v2
+name: sovereign-ai
+description: Sovereign AI Platform — autonomous SRE intelligence, fully on-premises
+type: application
+version: 0.1.0
+appVersion: "0.2.1"
+keywords:
+  - ai
+  - sre
+  - sovereign
+  - llm
+  - kubernetes
+maintainers:
+  - name: t12-pybash
+dependencies:
+  - name: litellm
+    version: "0.1.0"
+    repository: "file://charts/litellm"
+    condition: litellm.enabled
+  - name: qdrant
+    version: "0.1.0"
+    repository: "file://charts/qdrant"
+    condition: qdrant.enabled
+  - name: open-webui
+    version: "0.1.0"
+    repository: "file://charts/open-webui"
+    condition: openWebui.enabled

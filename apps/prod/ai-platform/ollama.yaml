@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: ai-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: truenas-iscsi
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: ollama
+  namespace: ai-platform
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+spec:
+  predictor:
+    nodeSelector:
+      gpu: "true"
+    runtimeClassName: nvidia
+    volumes:
+      - name: models
+        persistentVolumeClaim:
+          claimName: ollama-models
+    containers:
+      - name: kserve-container
+        image: ollama/ollama@sha256:a6149234667efc71d37766d61c1a16f24c33e4cd7a0bf4125c44a7e47e2419c4
+        ports:
+          - containerPort: 11434
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+            nvidia.com/gpu: "1"
+          limits:
+            memory: 10Gi
+            nvidia.com/gpu: "1"
+        volumeMounts:
+          - name: models
+            mountPath: /root/.ollama
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 4
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+# Keeps the 'ollama' service name stable so LiteLLM config doesn't change.
+# Selects pods created by KServe for the ollama InferenceService.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: ai-platform
+spec:
+  selector:
+    serving.kserve.io/inferenceservice: ollama
+    component: predictor
+  ports:
+    - port: 11434
+      targetPort: 11434

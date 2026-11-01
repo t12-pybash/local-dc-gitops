@@ -1,0 +1,67 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
+  "labels": ["renovate", "dependencies"],
+  "prConcurrentLimit": 5,
+  "separateMinorPatch": false,
+  "kubernetes": {
+    "fileMatch": [
+      "(^|/)apps/.+\\.yaml$",
+      "(^|/)infrastructure/.+\\.yaml$",
+      "(^|/)monitoring/.+\\.yaml$"
+    ]
+  },
+  "flux": {
+    "fileMatch": [
+      "(^|/)apps/.+\\.yaml$",
+      "(^|/)infrastructure/.+\\.yaml$",
+      "(^|/)monitoring/.+\\.yaml$",
+      "(^|/)helm/.+\\.yaml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "sre-cli images are managed by the app pipeline — do not touch",
+      "matchPackageNames": ["ghcr.io/t12-pybash/sre-cli"],
+      "enabled": false
+    },
+    {
+      "description": "Group all AI platform app image updates into one PR",
+      "matchManagers": ["kubernetes"],
+      "matchPackagePatterns": [
+        "^ollama/ollama",
+        "^lissy93/dashy",
+        "^n8nio/n8n",
+        "^vaultwarden/server",
+        "^nextcloud",
+        "^radialapps/go-vod"
+      ],
+      "groupName": "homelab app images",
+      "automerge": false
+    },
+    {
+      "description": "Group database image updates",
+      "matchManagers": ["kubernetes"],
+      "matchPackageNames": ["postgres", "redis"],
+      "groupName": "database images",
+      "automerge": false
+    },
+    {
+      "description": "Group infrastructure Helm chart updates",
+      "matchManagers": ["flux"],
+      "matchFileNames": ["infrastructure/**"],
+      "groupName": "infrastructure helm charts",
+      "automerge": false
+    },
+    {
+      "description": "Group monitoring stack updates",
+      "matchManagers": ["flux"],
+      "matchFileNames": ["monitoring/**"],
+      "groupName": "monitoring helm charts",
+      "automerge": false
+    }
+  ]
+}

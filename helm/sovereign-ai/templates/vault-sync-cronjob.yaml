@@ -1,0 +1,74 @@
+{{- if .Values.argus.vaultSync.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: argus-vault-sync
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.argus.vaultSync.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: argus
+          restartPolicy: OnFailure
+          {{- if .Values.argus.vaultSync.gitSync.enabled }}
+          initContainers:
+            - name: git-sync
+              image: registry.k8s.io/git-sync/git-sync:v4.2.1
+              env:
+                - name: GITSYNC_REPO
+                  value: {{ .Values.argus.vaultSync.gitSync.repo | quote }}
+                - name: GITSYNC_REF
+                  value: {{ .Values.argus.vaultSync.gitSync.ref | default "main" | quote }}
+                - name: GITSYNC_ROOT
+                  value: /vault
+                - name: GITSYNC_ONE_TIME
+                  value: "true"
+                {{- if .Values.argus.vaultSync.gitSync.secretName }}
+                - name: GITSYNC_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.argus.vaultSync.gitSync.secretName }}
+                      key: username
+                - name: GITSYNC_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.argus.vaultSync.gitSync.secretName }}
+                      key: password
+                {{- end }}
+              volumeMounts:
+                - name: vault
+                  mountPath: /vault
+          {{- end }}
+          containers:
+            - name: vault-sync
+              image: {{ .Values.argus.image }}
+              command: ["argus", "vault", "sync"]
+              env:
+                - name: ARGUS_VAULT_PATH
+                  value: /vault/{{ .Values.argus.vaultSync.subDir | default "" }}
+                - name: ARGUS_QDRANT_URL
+                  value: {{ default (include "sovereign-ai.qdrantUrl" .) .Values.argus.config.qdrantUrl | quote }}
+                - name: ARGUS_OLLAMA_URL
+                  value: {{ default (include "sovereign-ai.litellmUrl" .) .Values.argus.config.ollamaUrl | quote }}
+              volumeMounts:
+                - name: config
+                  mountPath: /root/.config/argus
+                - name: vault
+                  mountPath: /vault
+          volumes:
+            - name: config
+              configMap:
+                name: argus-config
+            - name: vault
+              {{- if .Values.argus.vaultSync.pvcName }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.argus.vaultSync.pvcName }}
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}

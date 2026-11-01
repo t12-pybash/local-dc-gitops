@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tailscale-forward-fix
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: tailscale-forward-fix
+  template:
+    metadata:
+      labels:
+        app: tailscale-forward-fix
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: wk4
+      tolerations:
+        - operator: Exists
+      hostNetwork: true
+      hostPID: true
+      initContainers:
+        - name: iptables-fix
+          image: busybox:1.36
+          securityContext:
+            privileged: true
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              # All iptables/ip commands run via nsenter into the host mount namespace
+              # so they use the host's binaries and libraries natively — no lib conflicts.
+              NS="nsenter -t 1 -m --"
+              # Delete any stale TPROXY rules (includes current port for idempotency on restart)
+              for STALE_PORT in 19784 9878 16747; do
+                for PORT in 80 443; do
+                  $NS iptables-legacy -t mangle -D PREROUTING \
+                    -i tailscale0 -p tcp --dport $PORT -d <gateway-vip> \
+                    -j TPROXY --tproxy-mark 0x200/0xffffffff --on-ip 127.0.0.1 --on-port $STALE_PORT \
+                    2>/dev/null || true
+                done
+              done
+              # TPROXY tailscale0 → Gateway VIP (<gateway-vip>) to Cilium Envoy at 16747
+              for PORT in 80 443; do
+                $NS iptables-legacy -t mangle -I PREROUTING 1 \
+                  -i tailscale0 -p tcp --dport $PORT -d <gateway-vip> \
+                  -j TPROXY --tproxy-mark 0x200/0xffffffff --on-ip 127.0.0.1 --on-port 16747
+              done
+              # Route responses back via Tailscale's table 52
+              $NS ip rule show | grep -q "from <gateway-vip> lookup 52" || \
+                $NS ip rule add from <gateway-vip> lookup 52 priority 8
+              # MASQUERADE Tailscale CGNAT so cluster nodes route replies back via wk4
+              $NS iptables -t nat -C POSTROUTING \
+                -s 100.64.0.0/10 ! -o tailscale0 -j MASQUERADE 2>/dev/null || \
+              $NS iptables -t nat -I POSTROUTING 1 \
+                -s 100.64.0.0/10 ! -o tailscale0 -j MASQUERADE
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 1m
+              memory: 1Mi

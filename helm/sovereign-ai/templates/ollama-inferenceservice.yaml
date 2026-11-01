@@ -1,0 +1,52 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: ollama
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+spec:
+  predictor:
+    {{- if .Values.ollama.gpu.enabled }}
+    nodeSelector:
+      {{- toYaml .Values.ollama.gpu.nodeSelector | nindent 6 }}
+    runtimeClassName: {{ .Values.ollama.gpu.runtimeClassName }}
+    {{- end }}
+    volumes:
+      - name: models
+        persistentVolumeClaim:
+          claimName: ollama-models
+    containers:
+      - name: kserve-container
+        image: {{ .Values.ollama.image }}
+        ports:
+          - containerPort: {{ .Values.ollama.service.port }}
+            protocol: TCP
+        resources:
+          requests:
+            cpu: {{ .Values.ollama.resources.requests.cpu }}
+            memory: {{ .Values.ollama.resources.requests.memory }}
+            {{- if .Values.ollama.gpu.enabled }}
+            nvidia.com/gpu: "1"
+            {{- end }}
+          limits:
+            memory: {{ .Values.ollama.resources.limits.memory }}
+            {{- if .Values.ollama.gpu.enabled }}
+            nvidia.com/gpu: "1"
+            {{- end }}
+        volumeMounts:
+          - name: models
+            mountPath: /root/.ollama
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.ollama.service.port }}
+          initialDelaySeconds: {{ .Values.ollama.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.ollama.livenessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.ollama.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.ollama.service.port }}
+          initialDelaySeconds: {{ .Values.ollama.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.ollama.readinessProbe.periodSeconds }}

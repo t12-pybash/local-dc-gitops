@@ -1,0 +1,50 @@
+{{- if .Values.argus.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argus
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "events", "nodes", "services", "endpoints"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources: ["helmreleases"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["inferenceservices"]
+    verbs: ["get", "list", "watch", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argus
+subjects:
+  - kind: ServiceAccount
+    name: argus
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: argus
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

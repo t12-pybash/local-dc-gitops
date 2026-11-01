@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-ingest-consumer
+  namespace: vault-ingest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-ingest-consumer
+  template:
+    metadata:
+      labels:
+        app: vault-ingest-consumer
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: consumer
+          image: ghcr.io/t12-pybash/argus@sha256:f18bc2c5cbedd3b55690f0ca77671b409c5f2a897d796b9c94adb505afc92a87
+          imagePullPolicy: Always
+          command: ["python", "-m", "argus.scripts.consume_vault"]
+          env:
+            - name: ARGUS_CONFIG_FILE
+              value: /etc/argus/config.toml
+          volumeMounts:
+            - name: argus-config
+              mountPath: /etc/argus
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: argus-config
+          configMap:
+            name: argus-config

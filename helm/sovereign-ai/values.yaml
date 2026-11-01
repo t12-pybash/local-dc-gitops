@@ -1,0 +1,142 @@
+# Sovereign AI Platform — values.yaml
+# All resources deploy into this namespace
+namespace: ai-platform
+
+# ── Ollama inference runtime ──────────────────────────────────────────────────
+# Requires KServe v0.13+ pre-installed (helm install kserve ...)
+ollama:
+  image: ollama/ollama@sha256:a6149234667efc71d37766d61c1a16f24c33e4cd7a0bf4125c44a7e47e2419c4
+  storage:
+    size: 100Gi
+    storageClass: ""          # leave empty to use cluster default
+  gpu:
+    enabled: true
+    nodeSelector:
+      gpu: "true"
+    runtimeClassName: nvidia
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      memory: 10Gi
+  service:
+    port: 11434
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    failureThreshold: 4
+  readinessProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+
+# ── LiteLLM API gateway ───────────────────────────────────────────────────────
+litellm:
+  enabled: true
+  image:
+    repository: ghcr.io/berriai/litellm
+    tag: main-latest@sha256:4870893763aca143f590bd5685a25219037af027d1d27e97abcb17ac9ec5d09f
+  service:
+    type: ClusterIP
+    port: 4000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  config:
+    model_list:
+      - model_name: llama3.1:8b
+        litellm_params:
+          model: ollama/llama3.1:8b
+          api_base: http://ollama.ai-platform.svc.cluster.local:11434
+      - model_name: deepseek-r1:7b
+        litellm_params:
+          model: ollama/deepseek-r1:7b
+          api_base: http://ollama.ai-platform.svc.cluster.local:11434
+      - model_name: phi4-mini
+        litellm_params:
+          model: ollama/phi4-mini
+          api_base: http://ollama.ai-platform.svc.cluster.local:11434
+      - model_name: qwen2.5-coder:7b
+        litellm_params:
+          model: ollama/qwen2.5-coder:7b
+          api_base: http://ollama.ai-platform.svc.cluster.local:11434
+    router_settings:
+      enable_pre_call_checks: true
+      enable_cooldowns: true
+
+# ── Qdrant vector DB (RAG knowledge base) ────────────────────────────────────
+qdrant:
+  enabled: true
+  image:
+    repository: qdrant/qdrant
+    tag: v1.16.3@sha256:0425e3e03e7fd9b3dc95c4214546afe19de2eb2e28ca621441a56663ac6e1f46
+  persistence:
+    size: 10Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+# ── Open WebUI ────────────────────────────────────────────────────────────────
+openWebui:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: v0.9.5@sha256:e045bde3b004cc7f8c319412345eb56c87ea6ac57031534a31ca37ad5424beb3
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# ── Argus SRE agent ───────────────────────────────────────────────────────────
+argus:
+  enabled: true
+  image: ghcr.io/t12-pybash/argus:latest
+  imagePullSecret: ""         # name of existing Secret with GHCR credentials
+  agent:
+    enabled: true             # run argus agent daemon; false = sleep infinity (CLI only)
+    interval: 30              # alert poll interval seconds
+    auto: false               # auto-execute safe remediations without approval
+  config:
+    prometheusUrl: ""         # required: https://prometheus.example.com
+    alertmanagerUrl: ""       # required: https://alertmanager.example.com
+    lokiUrl: ""
+    ollamaUrl: "http://litellm.ai-platform.svc.cluster.local:4000"
+    ollamaModel: "llama3.1:8b"
+    diagnoseModel: "deepseek-r1:7b"
+    qdrantUrl: "http://qdrant.ai-platform.svc.cluster.local:6333"
+    embedModel: "nomic-embed-text"
+    vaultPath: "/vault"
+    agentWebhookUrl: ""       # optional: Slack webhook for notifications
+    agentWebhookType: "slack"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  vaultSync:
+    enabled: false              # set true to enable periodic vault → Qdrant sync
+    schedule: "0 * * * *"      # hourly by default
+    pvcName: ""                 # PVC containing the vault (emptyDir if blank)
+    subDir: ""                  # subdirectory within /vault to sync (e.g. "vault")
+    gitSync:
+      enabled: false            # use git-sync init container to pull vault from git
+      repo: ""                  # e.g. https://github.com/you/obsidian-vault.git
+      ref: main
+      secretName: ""            # k8s Secret with keys: username, password

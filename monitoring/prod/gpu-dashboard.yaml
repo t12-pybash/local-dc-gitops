@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-metrics-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  gpu-metrics.json: |
+    {
+      "uid": "sovereign-gpu",
+      "title": "GPU Metrics — Ollama Inference",
+      "tags": ["gpu", "nvidia", "ollama"],
+      "timezone": "browser",
+      "refresh": "10s",
+      "schemaVersion": 38,
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1, "type": "gauge", "title": "GPU Utilization",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"ai-platform\"}", "legendFormat": "GPU"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent", "min": 0, "max": 100,
+              "thresholds": {"mode": "absolute", "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]}
+            }
+          },
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "showThresholdMarkers": true}
+        },
+        {
+          "id": 2, "type": "gauge", "title": "VRAM Used",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_FB_USED{namespace=\"ai-platform\"} / 1024", "legendFormat": "VRAM Used GB"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decgbytes", "min": 0, "max": 8,
+              "thresholds": {"mode": "absolute", "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 6},
+                {"color": "red", "value": 7.5}
+              ]}
+            }
+          },
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "showThresholdMarkers": true}
+        },
+        {
+          "id": 3, "type": "gauge", "title": "GPU Temperature",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"ai-platform\"}", "legendFormat": "Temp °C"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius", "min": 0, "max": 100,
+              "thresholds": {"mode": "absolute", "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 75},
+                {"color": "red", "value": 83}
+              ]}
+            }
+          },
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "showThresholdMarkers": true}
+        },
+        {
+          "id": 4, "type": "stat", "title": "Power Draw",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"ai-platform\"}", "legendFormat": "Watts"}],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "watt",
+              "thresholds": {"mode": "absolute", "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 150}
+              ]}
+            }
+          },
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"}
+        },
+        {
+          "id": 5, "type": "timeseries", "title": "GPU Utilization Over Time",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"ai-platform\"}", "legendFormat": "GPU Util %"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "color": {"mode": "palette-classic"}}}
+        },
+        {
+          "id": 6, "type": "timeseries", "title": "VRAM Usage Over Time",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "datasource": {"type": "prometheus"},
+          "targets": [
+            {"expr": "DCGM_FI_DEV_FB_USED{namespace=\"ai-platform\"} / 1024", "legendFormat": "Used GB"},
+            {"expr": "DCGM_FI_DEV_FB_FREE{namespace=\"ai-platform\"} / 1024", "legendFormat": "Free GB"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "decgbytes", "min": 0, "max": 8}}
+        },
+        {
+          "id": 7, "type": "timeseries", "title": "Temperature Over Time",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"ai-platform\"}", "legendFormat": "°C"}],
+          "fieldConfig": {
+            "defaults": {"unit": "celsius", "min": 0,
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green","value": null},{"color": "red","value": 83}]},
+              "custom": {"thresholdsStyle": {"mode": "line"}}
+            }
+          }
+        },
+        {
+          "id": 8, "type": "timeseries", "title": "Power Draw Over Time",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "datasource": {"type": "prometheus"},
+          "targets": [{"expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"ai-platform\"}", "legendFormat": "Watts"}],
+          "fieldConfig": {"defaults": {"unit": "watt", "min": 0}}
+        }
+      ]
+    }
